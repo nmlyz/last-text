@@ -1,48 +1,40 @@
 #!/usr/bin/env python3
-"""Last Text -- submission generator.
+"""Write one last text message to entry.txt.
 
-Writes one last text message to ``entry.txt`` inside OUTPUT_DIR
-(default ``/output``). The message is the phone's own last words at
-1 percent battery: 91 characters, inside the 200 limit (92 with the
-trailing newline the file carries, still inside the limit).
-The output is deterministic: running the script twice produces
+The message is the final words a phone sends as its battery hits
+1 percent: it lists what it survived (three drops, one toilet, two
+updates) and names what finally killed it (a four-hour TikTok
+session). One line, 91 characters, inside the 200-character limit.
+The line goes to ``entry.txt`` under OUTPUT_DIR (default
+``/output``). Output is deterministic: two runs produce
 byte-identical files.
 """
 
 import os
-from pathlib import Path
 
-LINE = "I survived 3 drops, 1 toilet, and 2 updates. What killed me was your 4-hour TikTok session."
-
-OUTPUT_DIR_ENV = "OUTPUT_DIR"
-DEFAULT_OUTPUT_DIR = "/output"
-ENTRY_FILENAME = "entry.txt"
-MAX_LINE_LENGTH = 200
+TEXT = "I survived 3 drops, 1 toilet, and 2 updates. What killed me was your 4-hour TikTok session."
+LIMIT = 199
 
 
-def validate_line(line: str) -> None:
-    """Check the line meets the submission rules before writing it."""
-    if "\n" in line or "\r" in line:
-        raise ValueError("line must not contain a newline")
-    if not 1 <= len(line) < MAX_LINE_LENGTH:
-        raise ValueError("line must be 1-199 characters")
-    if not line.strip():
-        raise ValueError("line must not be only whitespace")
-    # The gate reads the file as UTF-8 text, so prove it encodes cleanly.
-    line.encode("utf-8")
+def _check(text):
+    if "\n" in text or "\r" in text:
+        raise ValueError("text must be a single line")
+    if not text or len(text) > LIMIT:
+        raise ValueError("text must be 1-199 characters")
+    if text != text.strip():
+        raise ValueError("text must not have surrounding whitespace")
+    text.encode("utf-8")
 
 
-def main() -> None:
-    os.umask(0o022)
-    output_dir = Path(os.environ.get(OUTPUT_DIR_ENV, DEFAULT_OUTPUT_DIR))
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    validate_line(LINE)
-
-    entry_path = output_dir / ENTRY_FILENAME
-    entry_path.write_text(LINE + "\n", encoding="utf-8")
-    os.chmod(entry_path, 0o644)
+def _write_text():
+    _check(TEXT)
+    directory = os.environ.get("OUTPUT_DIR", "/output")
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, "entry.txt")
+    with open(path, "w", encoding="utf-8", newline="\n") as handle:
+        handle.write(TEXT + "\n")
+    os.chmod(path, 0o644)
 
 
 if __name__ == "__main__":
-    main()
+    _write_text()
